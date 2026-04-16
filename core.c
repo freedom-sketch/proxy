@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <stdint.h>
 
+int handle_socks5_greeting(int client_fd);
+
 int main(int argc, char *argv[])
 {
     /* проверяем, что программа вызвана с указанием порта */
@@ -67,4 +69,17 @@ int main(int argc, char *argv[])
     /* закрываем дескрипторы */
     close(client_fd);
     close(server_fd);
+}
+
+int handle_socks5_greeting(int client_fd)
+{
+    uint8_t header[2];
+
+    ssize_t n = recv(client_fd, header, 2, 0);
+    if (n < 2) return -1;
+
+    uint8_t ver = header[0];
+    uint8_t n_methods = header[1];
+
+    if (ver != 05) return -1;
 }
