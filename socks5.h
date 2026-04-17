@@ -20,15 +20,15 @@
 #define ATYPE_IPv6 0x04
 
 /* Ответы (Replies) */
-#define RPL_SUCCEEDED 0x00
-#define RPL_GEN_SRV_FAILURE 0x01 /* general SOCKS server failure */
-#define RPL_CON_NOT_ALLOWED_BY_RULESET 0x02 /* connection not allowed by ruleset */
-#define RPL_NETWORK_UNREACHABLE
-#define RPL_HOST_UNREACHABLE
-#define RPL_CONNECTION_REFUSED 0x05
-#define RPL_TTL_EXPIRED 0x06
-#define RPL_CMD_NOT_SUPPORTED 0x07 /* Command not supported */
-#define RPL_ATYPE_NOT_SUPPORTED 0x08 /* Address type not supported */
+#define REP_SUCCEEDED 0x00
+#define REP_GEN_SRV_FAILURE 0x01 /* general SOCKS server failure */
+#define REP_CON_NOT_ALLOWED_BY_RULESET 0x02 /* connection not allowed by ruleset */
+#define REP_NETWORK_UNREACHABLE
+#define REP_HOST_UNREACHABLE
+#define REP_CONNECTION_REFUSED 0x05
+#define REP_TTL_EXPIRED 0x06
+#define REP_CMD_NOT_SUPPORTED 0x07 /* Command not supported */
+#define REP_ATYPE_NOT_SUPPORTED 0x08 /* Address type not supported */
 
 #define RSV 0x00; /* Зарезервированный байт */
 
