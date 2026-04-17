@@ -21,13 +21,13 @@ int main(int argc, char *argv[])
     /* создаем сокет сервера и записываем его дескриптор */
     int server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (server_fd < 0) {
-        perror("Failed to create socket\n");
+        perror("Failed to create socket");
         return -1;
     }
 
     int opt = 1;
     if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
-        perror("setsockopt failed\n");
+        perror("setsockopt failed");
     }
 
     /* создаем структуру для хранения локального IPv4 адреса */
@@ -40,13 +40,13 @@ int main(int argc, char *argv[])
 
     /* связываем дескриптор сокета с локальным адресом */
     if (bind(server_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
-        perror("bind failed\n");
+        perror("bind failed");
         return -1;
     };
 
     /* переводим сокет в состояние прослушки адреса */
     if (listen(server_fd, 10) < 0) {
-        perror("listen failed\n");
+        perror("listen failed");
         return -1;
     }
     printf("Server listening on port %s...\n", argv[1]);
@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
     /* принимаем входящий запрос на соединение */
     int client_fd = accept(server_fd, (struct sockaddr *)&client_addr, &client_addr_len);
     if (client_fd < 0) {
-        perror("accept failed\n");
+        perror("accept failed");
         return -1;
     }
 
