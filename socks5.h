@@ -30,7 +30,7 @@
 #define REP_CMD_NOT_SUPPORTED 0x07 /* Command not supported */
 #define REP_ATYPE_NOT_SUPPORTED 0x08 /* Address type not supported */
 
-#define RSV 0x00; /* Зарезервированный байт */
+#define RSV 0x00 /* Зарезервированный байт */
 
 struct __attribute__((packed)) socks5_header {
     uint8_t ver;
