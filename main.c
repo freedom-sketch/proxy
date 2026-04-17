@@ -3,6 +3,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <signal.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -12,6 +13,10 @@
 
 int main(int argc, char *argv[])
 {
+    /* устанавливаем игнорировать сигнал завершения дочерних процессов. Они будут автоматически
+    удаляться после отработки, не попадая в состояние defunct */
+    signal(SIGCHLD, SIG_IGN);
+
     /* проверяем, что программа вызвана с указанием порта */
     if (argc < 2) {
         fprintf(stderr, "Error. Usage: %s <port>\n", argv[0]);
@@ -55,19 +60,30 @@ int main(int argc, char *argv[])
     struct sockaddr_in client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
 
-    /* принимаем входящий запрос на соединение */
-    int client_fd = accept(server_fd, (struct sockaddr *)&client_addr, &client_addr_len);
-    if (client_fd < 0) {
-        perror("accept failed");
-        return -1;
+    while (1) {
+        /* принимаем входящий запрос на соединение */
+        int client_fd = accept(server_fd, (struct sockaddr *)&client_addr, &client_addr_len);
+        if (client_fd < 0) {
+            perror("accept failed");
+            continue;
+        }
+
+        char *client_ip = inet_ntoa(client_addr.sin_addr);
+        uint16_t client_port = ntohs(client_addr.sin_port);
+        printf("Connected: %s:%d\n", client_ip, client_port);
+
+        /* создаем дочерний процесс. fork() вернет PID созданного процесса в родительский процесс и 0 в дочерний */
+        if (fork() == 0) {
+            /* закрываем для дочернего процесса сокет SOCKS сервера */
+            close(server_fd);
+
+            if (handle_socks5_greeting(client_fd) == 0)
+                handle_socks5_request(client_fd);
+            
+            close(client_fd);
+            exit(0);
+        }
+
+        close(client_fd);
     }
-
-    /* получаем ip и порт клиента, выводим их */
-    char *client_ip = inet_ntoa(client_addr.sin_addr);
-    uint16_t client_port = ntohs(client_addr.sin_port);
-    printf("Connected: %s:%d\n", client_ip, client_port);
-
-    /* закрываем дескрипторы */
-    close(client_fd);
-    close(server_fd);
 }
