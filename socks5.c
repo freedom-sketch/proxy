@@ -100,9 +100,11 @@ encapsulated in the method-dependent encapsulation.
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>
+#include <poll.h>
 
 #include <string.h>
 #include <stdint.h>
+#include <stdio.h>
 
 int handle_socks5_greeting(int client_fd)
 {
@@ -207,4 +209,37 @@ int handle_socks5_request(int client_fd)
         return -1;
     
         return 0;
+}
+
+void start_relay(int client_fd, int remote_fd)
+{
+    struct pollfd fds[2];
+
+    fds[0].fd = client_fd;
+    fds[0].events = POLLIN;
+
+    fds[1].fd = remote_fd;
+    fds[1].events = POLLIN;
+
+    uint8_t buffer[10240];
+
+    while (1) {
+        int ret = poll(fds, 2, -1);
+        if (ret < 0) {
+            perror("poll error");
+            break;
+        }
+
+        for (int i=0; i < 2; i++) {
+            if (fds[i].revents & POLLIN) {
+                int source_fd = fds[i].fd;
+                int dest_fd = (i == 0) ? fds[1].fd : fds[0].fd;
+
+                ssize_t n = recv(source_fd, buffer, sizeof(buffer), 0);
+                if (n <= 0) return;
+
+                if (send(dest_fd, buffer, sizeof(buffer), 0) <= 0) return;
+            }
+        }
+    }
 }

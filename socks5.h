@@ -41,5 +41,6 @@ struct __attribute__((packed)) socks5_header {
 
 int handle_socks5_greeting(int client_fd);
 int handle_socks5_request(int client_fd);
+void start_relay(int client_fd, int remote_fd);
 
 #endif /* SOCKS5_H */
