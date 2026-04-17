@@ -20,7 +20,7 @@
 #define ATYPE_IPv6 0x04
 
 /* Ответы (Replies) */
-#define REP_SUCCEEDED 0x00
+#define REP_SUCCEEDED 0x00 /* Успех */
 #define REP_GEN_SRV_FAILURE 0x01 /* general SOCKS server failure */
 #define REP_CON_NOT_ALLOWED_BY_RULESET 0x02 /* connection not allowed by ruleset */
 #define REP_NETWORK_UNREACHABLE
