@@ -100,6 +100,8 @@ encapsulated in the method-dependent encapsulation.
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>
+#include <netdb.h>
+#include <arpa/inet.h>
 #include <poll.h>
 
 #include <string.h>
@@ -192,8 +194,11 @@ int handle_socks5_request(int client_fd)
             send(client_fd, reply, sizeof(reply), 0);
             close(remote_fd);
             return -1;
-        } else
+        } else {
             send(client_fd, reply, sizeof(reply), 0);
+            start_relay(client_fd, remote_fd);
+            close(remote_fd);
+        }
 
     } else if (hdr.atyp == ATYPE_DOMAINNAME) {
         uint8_t len;
@@ -205,6 +210,9 @@ int handle_socks5_request(int client_fd)
 
         uint16_t port;
         recv(client_fd, &port, sizeof(port), 0);
+
+        char port_str[6];
+        snprintf(port_str, sizeof(port_str), "%d", ntohs(port));
     } else
         return -1;
     
