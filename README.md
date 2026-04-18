@@ -7,6 +7,7 @@
 git clone https://github.com/freedom-sketch/socks5-proxy
 ```
 ### 2. Скомпилируйте
+Рекомендуется использовать GCC
 ```bash
 cc main.c socks5.c -o a.out
 ```
