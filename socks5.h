@@ -3,6 +3,13 @@
 
 #include <stdint.h>
 
+extern int debug_info;
+extern uint16_t server_port;
+
+/* Макрос для логирования в stdout */
+#define LOG(fmt, ...) \
+    do { if (debug_info) printf(fmt, ##__VA_ARGS__); } while (0)
+
 /* Методы аутенфикации */
 #define METHOD_NO_AUTH_REQ 0x00 /* NO AUTHENTICATION REQUIRED */
 #define METHOD_GSSAPI 0x01
@@ -44,9 +51,6 @@ struct __attribute__((packed)) socks5_header {
     uint8_t rsv;
     uint8_t atyp;
 };
-
-extern int debug_info;
-extern uint16_t server_port;
 
 int handle_socks5_greeting(int client_fd);
 int handle_socks5_request(int client_fd);
