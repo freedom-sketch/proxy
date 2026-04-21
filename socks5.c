@@ -250,7 +250,8 @@ struct in_addr **domain_to_ipv4_list(const char *hostname)
 }
 */
 
-int process_ipv4_request(int client_fd)
+/* Обрабатывает запрос с ATYPE = IPv4 */
+static int process_ipv4_request(int client_fd)
 {
     uint8_t ip[4]; /* создаем буфер на 4 байта под IP адрес */
     uint16_t port; /* буфер на 2 байта под порт */
@@ -298,16 +299,8 @@ int process_ipv4_request(int client_fd)
     close(remote_fd);
 }
 
-void form_default_reply(uint8_t *rpl)
-{
-    memset(rpl, 0, sizeof(rpl));
-    rpl[0] = 0x05;
-    rpl[1] = REP_SUCCEEDED;
-    rpl[2] = RSV;
-    rpl[3] = ATYPE_IPv4;
-}
-
-void start_relay(int client_fd, int remote_fd)
+/* запускает проксирование трафика между клиентом и целевым хостом */
+static void start_relay(int client_fd, int remote_fd)
 {
     LOG(GRN_TXT "\nRELAY STARTED\n" RESET);
     
@@ -349,3 +342,21 @@ void start_relay(int client_fd, int remote_fd)
         }
     }
 }
+
+
+/* Формирует дефолтный байтовый массив ответа. Переданный массив должен быть 10 байт.
+VER = 0x05
+REP = 0x00 (succeeded)
+RSV = 0x00
+ATYPE = 0x01 (IPv4)
+BND.ADDR и BND.PORT заполняет нулями */
+static void form_default_reply(uint8_t *rpl)
+{
+    memset(rpl, 0, sizeof(rpl));
+    rpl[0] = 0x05;
+    rpl[1] = REP_SUCCEEDED;
+    rpl[2] = RSV;
+    rpl[3] = ATYPE_IPv4;
+}
+
+static struct in_addr **domain_to_ipv4_list(const char *hostname);

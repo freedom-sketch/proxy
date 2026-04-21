@@ -55,19 +55,4 @@ struct __attribute__((packed)) socks5_header {
 int handle_socks5_greeting(int client_fd);
 int handle_socks5_request(int client_fd);
 
-/* Обрабатывает запрос с ATYPE = IPv4 */
-int process_ipv4_request(int client_fd);
-
-struct in_addr **domain_to_ipv4_list(const char *hostname);
-
-/* Формирует дефолтный байтовый массив ответа. Переданный массив должен быть 10 байт.
-VER = 0x05
-REP = 0x00 (succeeded)
-RSV = 0x00
-ATYPE = 0x01 (IPv4)
-BND.ADDR и BND.PORT заполняет нулями */
-void form_default_reply(uint8_t rpl[10]);
-
-void start_relay(int client_fd, int remote_fd);
-
 #endif /* SOCKS5_H */
