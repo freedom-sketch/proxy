@@ -199,8 +199,6 @@ static int process_ipv4_request(int client_fd)
         .sin_port = port
     };
 
-    /* VER, REP, RSV, ATYP = 1 байт, BND.PORT = 2 байта, BND.ADDR = 4 байта (IPv4)
-    1 * 4 + 2 + 4 = 10 байт */
     uint8_t reply[10] = {0};
     form_default_reply(reply);
 
@@ -231,16 +229,16 @@ static void start_relay(int client_fd, int remote_fd)
     
     struct pollfd fds[2];
 
+    /* устанавливаем ожидать событие появления данных на чтение  */
     fds[0].fd = client_fd;
     fds[0].events = POLLIN;
-
     fds[1].fd = remote_fd;
     fds[1].events = POLLIN;
 
-    uint8_t buffer[10240];
+    uint8_t buffer[5120]; /* буфер на 5 кб */
 
     while (1) {
-        int ret = poll(fds, 2, -1);
+        int ret = poll(fds, 2, -1); /* ждем событие POLLIN */
         if (ret < 0) {
             perror("poll error");
             break;
@@ -255,7 +253,7 @@ static void start_relay(int client_fd, int remote_fd)
                 if (n <= 0) return;
 
                 if (debug_info) {
-                    char printf_buffer[10241];
+                    char printf_buffer[5121];
                     memcpy(printf_buffer, buffer, n);
                     printf_buffer[n+1] = '\0';
                     printf(BOLD_TXT "\nCHANGES IN SOCKETS:\n" RESET);
