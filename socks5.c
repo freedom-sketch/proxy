@@ -25,6 +25,18 @@
 #include <stdint.h>
 #include <stdio.h>
 
+/* Обрабатывает SOCKS5 авторизацию */
+int handle_socks5_greeting(int client_fd);
+/* Обрабатывает запросы авторизованных клиентов */
+int handle_socks5_request(int client_fd);
+
+/* Формирует пакет ответа на 10 байт: VER=0x05; REP=0x00; ATYPE=0x01; BND.ADDR и BND.PORT обнуляет */
+static void form_default_reply(uint8_t *rpl);
+/* Обрабатывает запрос с ATYPE = IPv4 */
+static int process_ipv4_request(int client_fd);
+/* Запускает двустороннюю ретрансляцию данных между клиентом и целевым хостом*/
+static void start_relay(int client_fd, int remote_fd);
+
 int handle_socks5_greeting(int client_fd)
 {
     uint8_t header[2];
@@ -165,7 +177,6 @@ struct in_addr **domain_to_ipv4_list(const char *hostname)
 }
 */
 
-/* Обрабатывает запрос с ATYPE = IPv4 */
 static int process_ipv4_request(int client_fd)
 {
     uint8_t ip[4]; /* создаем буфер на 4 байта под IP адрес */
@@ -214,10 +225,6 @@ static int process_ipv4_request(int client_fd)
     close(remote_fd);
 }
 
-/* Запускает двустороннюю ретрансляцию данных между клиентом и целевым хостом.
-Использует poll() для мониторинга изменений в обоих сокетах. 
-client_fd - дескриптор сокета клиента.
-remote_fd - дескриптор целевого хоста. */
 static void start_relay(int client_fd, int remote_fd)
 {
     LOG(GRN_TXT "\nRELAY STARTED\n" RESET);
@@ -261,20 +268,11 @@ static void start_relay(int client_fd, int remote_fd)
     }
 }
 
-
-/* Формирует 10-байтовый пакет ответа по умолчанию:
-VER = 0x05
-REP = 0x00 (succeeded)
-RSV = 0x00
-ATYPE = 0x01 (IPv4)
-BND.ADDR и BND.PORT заполняет нулями */
 static void form_default_reply(uint8_t *rpl)
 {
-    memset(rpl, 0, rpl);
+    memset(rpl, 0, 10);
     rpl[0] = 0x05;
     rpl[1] = REP_SUCCEEDED;
     rpl[2] = RSV;
     rpl[3] = ATYPE_IPv4;
 }
-
-static struct in_addr **domain_to_ipv4_list(const char *hostname);
