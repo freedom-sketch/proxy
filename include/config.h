@@ -12,7 +12,11 @@
 struct config_t {
 	struct in_addr listen_addr;
 	uint16_t port;
-	int debug_info;
 };
+
+/* Инициализирует конфиг с помощью cJSON */
+int init_config(const char* path);
+/* Заполняет cfg данными из main_config */
+void fill_config(struct config_t* cfg);
 
 #endif /* !CONFIG_H */
