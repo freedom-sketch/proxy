@@ -1,3 +1,7 @@
+/*
+* config.h - Интерфейс работы с конфигурационным файлом.
+*/
+
 #ifndef CONFIG_H
 #define CONFIG_H
 
