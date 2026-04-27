@@ -50,12 +50,23 @@ extern uint16_t server_port;
 
 #define RSV 0x00 /* Зарезервированный байт */
 
-struct __attribute__((packed)) socks5_header {
-    uint8_t ver;
-    uint8_t cmd;
-    uint8_t rsv;
-    uint8_t atyp;
-};
+#ifdef _MSC_VER
+    #pragma pack(push, 1)
+    struct socks5_header {
+        uint8_t ver;
+        uint8_t cmd;
+        uint8_t rsv;
+        uint8_t atyp;
+    };
+    #pragma pack(pop)
+#else
+    struct __attribute__((packed)) socks5_header {
+        uint8_t ver;
+        uint8_t cmd;
+        uint8_t rsv;
+        uint8_t atyp;
+    };
+#endif /* _MSC_VER */
 
 int handle_socks5_greeting(int client_fd);
 int handle_socks5_request(int client_fd);
