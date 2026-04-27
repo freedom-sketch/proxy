@@ -56,4 +56,6 @@ dkms.conf
 
 .vscode
 .vs
+.json
+
 out
