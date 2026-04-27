@@ -2,6 +2,9 @@
  * fmt.h - Определение макросов ANSI-escape последовательностей
 */
 
+#ifndef FMT_H
+#define FMT_H
+
 #define BLUE_TXT "\033[34m" /* Синий цвет текста */
 #define GRN_TXT "\033[32m" /* Зеленый увет текста */
 
@@ -15,3 +18,5 @@
 #define WHITE_BACKG "\x1b[47m" /* Белый фон */
 
 #define RESET "\033[0m" /* Сброс */
+
+#endif // !FMT_H

@@ -9,8 +9,8 @@
  * RFC3089: https://datatracker.ietf.org/doc/html/rfc3089
 */
 
-#include "../socks5.h"
-#include "fmt.h"
+#include "../../include/socks5.h"
+#include "../../include/fmt.h"
 
 #include <WinSock2.h>
 #include <WS2tcpip.h>
@@ -37,9 +37,4 @@ int proxy_init()
 		return -1;
 	}
 	LOG("Server socket initialization is OK\n");
-
-	struct sockaddr_in server_addr = {
-		.sin_family = AF_INET,
-
-	}
 }

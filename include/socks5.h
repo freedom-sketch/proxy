@@ -71,4 +71,4 @@ extern uint16_t server_port;
 int handle_socks5_greeting(int client_fd);
 int handle_socks5_request(int client_fd);
 
-#endif /* SOCKS5_H */
+#endif /* !SOCKS5_H */
