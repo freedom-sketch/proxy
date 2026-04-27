@@ -37,4 +37,9 @@ int proxy_init()
 		return -1;
 	}
 	LOG("Server socket initialization is OK\n");
+
+	struct sockaddr_in server_addr = {
+		.sin_family = AF_INET,
+
+	}
 }
