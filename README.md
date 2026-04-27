@@ -20,3 +20,10 @@ cc main.c socks5.c -o a.out
 ```bash
 curl -v --socks5 127.0.0.1:<port> 1.1.1.1
 ```
+
+## TODO
+**Поддержка:**
+* Windows
+* IPv6
+* UDP
+* TLS
