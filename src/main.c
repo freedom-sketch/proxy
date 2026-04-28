@@ -9,25 +9,38 @@
  * RFC3089: https://datatracker.ietf.org/doc/html/rfc3089
 */
 
-#include "socks5.h"
+#include "include/socks5.h"
+#include "include/config.h"
 
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <signal.h>
-
-#include <stdlib.h>
-#include <string.h>
-#include <stdint.h>
-#include <unistd.h>
-#include <getopt.h>
 #include <stdio.h>
 
 int debug_info = 0;
-uint16_t server_port = 1080;
 
 int main(int argc, char *argv[])
 {
+    if (init_config(DEFAULT_CONFIG_PATH) < 0) {
+        fprintf(stderr, "Could not open config at %s\n", DEFAULT_CONFIG_PATH);
+        return -1;
+    }
+
+    struct config_t config;
+    fill_config(&config);
+
+    /*
+    *
+    * 
+    * 
+    * 
+    * 
+    * ВСЕ, ЧТО НИЖЕ, БУДЕТ ПЕРЕПИСАНО
+    * 
+    * 
+    * 
+    * 
+    * 
+    */
+
+
     /* устанавливаем игнорировать сигнал завершения дочерних процессов. Они будут автоматически
     удаляться после отработки, не попадая в состояние defunct */
     signal(SIGCHLD, SIG_IGN);
@@ -74,9 +87,10 @@ int main(int argc, char *argv[])
 
     /* связываем дескриптор сокета с локальным адресом */
     if (bind(server_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
-        perror("bind failed");
+        perror("Error Socket binding to server info");
         return -1;
     };
+    LOG("Binding socket to Server info is OK\n");
 
     /* переводим сокет в состояние прослушки адреса */
     if (listen(server_fd, 10) < 0) {
