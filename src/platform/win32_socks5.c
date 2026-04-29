@@ -75,22 +75,22 @@ int proxy_init(struct config_t *cfg)
 
 static SOCKET init_socket(int af, int type, int protocol, int reuse_addr, struct sockaddr_in *local_addr)
 {
-	SOCKET socket_ = socket(af, type, protocol);
-	if (socket_ == INVALID_SOCKET) {
-		closesocket(socket_);
+	SOCKET new_socket = socket(af, type, protocol);
+	if (new_socket == INVALID_SOCKET) {
+		closesocket(new_socket);
 		return NULL;
 	}
 
 	if (reuse_addr) {
 		int socket_opt = 1;
-		if (setsockopt(socket_, SOL_SOCKET, SO_REUSEADDR, &socket_opt, sizeof(socket_opt)) != 0)
+		if (setsockopt(new_socket, SOL_SOCKET, SO_REUSEADDR, &socket_opt, sizeof(socket_opt)) != 0)
 			return NULL;
 	}
 
-	if (bind(socket_, (struct sockaddr*)local_addr, sizeof(socket_)) != 0) {
-		closesocket(socket_);
+	if (bind(new_socket, (struct sockaddr*)local_addr, sizeof(new_socket)) != 0) {
+		closesocket(new_socket);
 		return NULL;
 	};
 
-	return socket_;
+	return new_socket;
 }
