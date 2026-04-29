@@ -55,7 +55,14 @@ int proxy_init(struct config_t *cfg)
 		WSACleanup();
 		return -1;
 	}
-	printf("Listening...\n");
+	char str_local_ip[47];
+	if (inet_ntop(AF_INET, &cfg->listen_addr, str_local_ip, sizeof(str_local_ip)) == NULL) {
+		fprintf(stderr, "Failed to convert byte representation of IP address to string.");
+		closesocket(server_socket);
+		WSACleanup();
+		return -1;
+	}
+	printf("Listening to %s:%d...\n", str_local_ip, ntohs(cfg->port));
 
 	struct sockaddr_in client_addr = {0};
 	socklen_t client_addr_len = sizeof(client_addr);
