@@ -53,7 +53,7 @@ int proxy_init(struct config_t *cfg)
 	};
 
 	SOCKET server_socket = init_socket(AF_INET, SOCK_STREAM, 0, 1, &server_addr);
-	if (server_socket == NULL) {
+	if (server_socket == INVALID_SOCKET) {
 		fprintf(stderr, "Error initialization server socket #%d\n", WSAGetLastError());
 		WSACleanup();
 		return -1;
@@ -94,18 +94,18 @@ static SOCKET init_socket(int af, int type, int protocol, int reuse_addr, struct
 	SOCKET new_socket = socket(af, type, protocol);
 	if (new_socket == INVALID_SOCKET) {
 		closesocket(new_socket);
-		return NULL;
+		return INVALID_SOCKET;
 	}
 
 	if (reuse_addr) {
 		int socket_opt = 1;
-		if (setsockopt(new_socket, SOL_SOCKET, SO_REUSEADDR, &socket_opt, sizeof(socket_opt)) != 0)
-			return NULL;
+		if (setsockopt(new_socket, SOL_SOCKET, SO_REUSEADDR, (char *)& socket_opt, sizeof(socket_opt)) != 0)
+			return INVALID_SOCKET;
 	}
 
 	if (bind(new_socket, (struct sockaddr*)local_addr, sizeof(new_socket)) != 0) {
 		closesocket(new_socket);
-		return NULL;
+		return INVALID_SOCKET;
 	};
 
 	return new_socket;
