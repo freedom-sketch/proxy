@@ -22,17 +22,17 @@
 /* Инициализирует серверный сокет в соответствии с конфигом и начинает прослушку */
 int proxy_init(struct config_t* cfg);
 /* Обрабатывает SOCKS5 авторизацию */
-int handle_socks5_greeting(int client_fd);
+int handle_socks5_greeting(SOCKET client_socket);
 /* Обрабатывает запросы авторизованных клиентов */
-int handle_socks5_request(int client_fd);
+int handle_socks5_request(SOCKET client_fd);
 /* Формирует пакет ответа на 10 байт: VER=0x05; REP=0x00; ATYPE=0x01; BND.ADDR и BND.PORT обнуляет */
 static void form_default_reply(uint8_t* rpl);
 /* Обрабатывает запрос с ATYPE = 0x01 */
-static int process_ipv4_request(int client_fd);
+static int process_ipv4_request(SOCKET client_fd);
 /* Обрабатывает запрос с ATYPE = 0x03 */
-static int process_domainname_request(int client_fd);
+static int process_domainname_request(SOCKET client_fd);
 /* Запускает двустороннюю ретрансляцию данных между клиентом и целевым хостом*/
-static void start_relay(int client_fd, int remote_fd);
+static void start_relay(SOCKET client_fd, SOCKET remote_fd);
 /* Создает сокет, биндит его к local_addr и возвращает дескриптор */
 static SOCKET init_socket(int af, int type, int protocol, int reuse_addr, struct sockaddr_in* local_addr);
 
