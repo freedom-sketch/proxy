@@ -89,6 +89,47 @@ int proxy_init(struct config_t *cfg)
 	}
 }
 
+int handle_socks5_greeting(SOCKET client_socket)
+{
+	uint8_t header[2];
+	int n;
+	n = recv(client_socket, header, sizeof(header), 0);
+	if (n < 2) return -1;
+
+	uint8_t ver = header[0];
+	uint8_t n_methods = header[1];
+
+	if (ver != 0x05) return -1;
+	if (n_methods < 1) return -1;
+
+	uint8_t methods[255];
+	n = recv(client_socket, methods, 255, 0);
+	if (n < n_methods) return -1;
+
+	int auth_ok = 0;
+	for (int i = 0; i < n_methods; i++) {
+		if (methods[i] == METHOD_NO_AUTH_REQ) {
+			auth_ok = 1;
+			break;
+		}
+	}
+
+	if (auth_ok) {
+		uint8_t resp[2] = { 0x05, NO_ACCEPTABLE_METHODS };
+		LOG("AUTH:\n\tVER: %#x\n\tMETHOD: %#x\n", resp[0], resp[1]);
+		send(client_socket, resp, sizeof(resp), 0);
+		return -1;
+	}
+
+	uint8_t resp[2] = { 0x05, METHOD_NO_AUTH_REQ };
+	if (send(client_socket, resp, sizeof(resp), 0) < 2) {
+		LOG("AUTH:\n\tVER: %#x\n\tMETHOD: %#x\n", resp[0], resp[1]);
+		return -1;
+	}
+
+	return 0;
+}
+
 static SOCKET init_socket(int af, int type, int protocol, int reuse_addr, struct sockaddr_in *local_addr)
 {
 	SOCKET new_socket = socket(af, type, protocol);
