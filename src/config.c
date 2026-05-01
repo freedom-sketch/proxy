@@ -28,8 +28,8 @@ static char* read_config(const char* path);
 
 int init_config(const char *path)
 {
-	char* data = read_config(path);
-	if (!data) {
+	char *data = read_config(path);
+	if (data == NULL) {
 		fprintf(stderr, "Error reading config\n");
 		return -1;
 	}
@@ -82,28 +82,23 @@ int init_config(const char *path)
 
 static char* read_config(const char* path)
 {
-	FILE* f = fopen(path, "r");
+	FILE* f = fopen(path, "rb");
 	if (!f) {
-		perror("Error opening config");
+		perror("Can't open config");
 		return NULL;
 	}
 
-	if (fseek(f, 0, SEEK_END) != 0) {
-		perror("ftell error");
-		fclose(f);
-		return NULL;
-	}
-	long lsize = ftell(f);
-	if (lsize < 0) {
-		perror("ftell error");
-		fclose(f);
-		return NULL;
-	}
-	size_t size = (size_t)lsize;
-	fseek(f, 0, SEEK_SET);
+	fseek(f, 0, SEEK_END);
+	long size = ftell(f);
+	rewind(f);
 
-	char* data = calloc(size + 1, 1);
-	if (data == NULL) {
+	if (size < 0) {
+		fclose(f);
+		return NULL;
+	}
+
+	char *data = calloc((size_t)size + 1, 1);
+	if (!data) {
 		fclose(f);
 		return NULL;
 	}
@@ -111,6 +106,7 @@ static char* read_config(const char* path)
 	size_t read = fread(data, 1, size, f);
 	fclose(f);
 	if (read != size) {
+		printf("The read portion of the file did not match the file size.\n");
 		free(data);
 		return NULL;
 	}

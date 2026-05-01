@@ -131,7 +131,7 @@ static int process_ipv4_request(int client_fd)
     /* создаем и заполняем структуру информации об IPv4 сокете */
     struct sockaddr_in target_addr = {
         .sin_family = AF_INET,
-        .sin_addr.s_addr = htonl(*(uint32_t *)ip),
+        .sin_addr.s_addr = *(uint32_t *)ip,
         .sin_port = port
     };
 
@@ -166,15 +166,15 @@ static int process_domainname_request(int client_fd)
     recv(client_fd, &len, sizeof(len), 0);
     if (len == 0) return -1;
 
-    char domain[257];
+    char domain[256];
     recv(client_fd, domain, (size_t)len, 0);
     domain[len] = '\0';
 
-    uint16_t port;
-    recv(client_fd, &port, sizeof(port), 0);
+    uint16_t port_net;
+    recv(client_fd, &port_net, sizeof(port_net), 0);
 
     char s_port[7] = {0};
-    sprintf(s_port, "%d", ntohs(port));
+    snprintf(s_port, sizeof(s_port), "%hu", ntohs(port_net));
 
     LOG("\tDST.ADDR: %s\n\tDST.PORT: %d\n", domain, ntohs(port));
 
@@ -190,18 +190,21 @@ static int process_domainname_request(int client_fd)
         .ai_socktype = SOCK_STREAM
     }, *res;
 
+    uint8_t reply[10] = { 0 };
+    form_default_reply(reply);
+
     /* обращаемся к DNS серверу и пытаемся получить IP */
     int status = getaddrinfo(domain, s_port, &hints, &res);
     if (status != 0) {
+        reply[1] = REP_HOST_UNREACHABLE;
+        send(client_socket, reply, sizeof(reply), 0);
         fprintf(stderr, "getaddrinfo: %s\n",gai_strerror(status));
+        close(remote_fd);
         return -1;
     }
 
     struct sockaddr_in target_addr = *(struct sockaddr_in *)res->ai_addr;
     freeaddrinfo(res);
-
-    uint8_t reply[10] = {0};
-    form_default_reply(reply);
 
     /* пытаемся установить соединение */
     if (connect(remote_fd, (struct sockaddr *)&target_addr, sizeof(target_addr)) < 0) {

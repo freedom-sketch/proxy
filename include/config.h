@@ -7,6 +7,8 @@
 
 #include <stdint.h>
 
+extern int debug_info;
+
 #ifdef _WIN32
 	#include <winsock2.h>
 #else
