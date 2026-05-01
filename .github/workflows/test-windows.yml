@@ -15,6 +15,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Create config.json from example
+        run: |
+          echo "=== Creating minimal config.json from config.json.example ==="
+          Copy-Item -Path "config.json.example" -Destination "config.json" -Force
+          echo "Created config.json:"
+          Get-Content "config.json"
+        shell: pwsh
+
       - name: Setup CMake
         uses: lukka/get-cmake@latest
 
@@ -24,7 +32,11 @@ jobs:
       - name: Build project
         run: cmake --build build --config Release
 
-      - name: Show executable info
+      - name: Check executable
         run: |
+          echo "=== Checking executable ==="
+          dir build\Release\not_proxy_srv.exe
+          
+          echo "=== Running with --help ==="
           .\build\Release\not_proxy_srv.exe --help
         shell: pwsh
