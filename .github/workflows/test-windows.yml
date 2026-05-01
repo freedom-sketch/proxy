@@ -34,7 +34,6 @@ jobs:
         run: |
           echo "=== Starting SOCKS5 proxy server ==="
 
-          # Запускаем сервер с твоим конфигом
           $server = Start-Process -FilePath ".\build\Release\not_proxy_srv.exe" `
                     -ArgumentList "--config config.json" `
                     -NoNewWindow -PassThru
@@ -62,7 +61,6 @@ jobs:
             curl --verbose --socks5-hostname 127.0.0.1:8080 -I -L --connect-timeout 15 https://www.google.com
           }
 
-          # Останавливаем сервер
           echo "=== Stopping proxy server ==="
           Stop-Process -Id $server.Id -Force -ErrorAction SilentlyContinue
         shell: pwsh
