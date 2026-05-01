@@ -14,9 +14,6 @@
 
 #include <stdint.h>
 
-extern int debug_info;
-extern uint16_t server_port;
-
 /* Макрос для логирования в stdout */
 #define LOG(fmt, ...) \
     do { if (debug_info) printf(fmt, ##__VA_ARGS__); } while (0)
@@ -68,9 +65,23 @@ extern uint16_t server_port;
     };
 #endif /* _MSC_VER */
 
-/* Инициализация серверного сокета и начало прослушки */
-int server_init(struct config_t* cfg);
-int handle_socks5_greeting(int client_fd);
-int handle_socks5_request(int client_fd);
+
+#ifdef _WIN32
+    #include <WinSock2.h> 
+#else
+    typedef int SOCKET;
+    #define INVALID_SOCKET (~0)
+#endif /* _WIN32 */
+
+struct config_t;
+
+/* Инициализирует серверный сокет в соответствии с конфигом */
+SOCKET server_init(struct config_t* cfg);
+/* Запускает сервер, начиная принимать клиентов */
+int server_run(SOCKET srv_sock);
+/* Обрабатывает SOCKS5 авторизацию */
+int handle_socks5_greeting(SOCKET client_socket);
+/* Обрабатывает запросы авторизованных клиентов */
+int handle_socks5_request(SOCKET client_socket);
 
 #endif /* !SOCKS5_H */

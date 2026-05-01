@@ -14,121 +14,17 @@
 
 #include <stdio.h>
 
-int debug_info = 0;
-
 int main(int argc, char *argv[])
 {
     if (init_config(DEFAULT_CONFIG_PATH) < 0) {
-        fprintf(stderr, "Could not open config at %s\n", DEFAULT_CONFIG_PATH);
+        fprintf(stderr, "Error reading config at \"%s\"\n", DEFAULT_CONFIG_PATH);
         return -1;
     }
 
     struct config_t config;
     fill_config(&config);
 
-    /*
-    *
-    * 
-    * 
-    * 
-    * 
-    * ВСЕ, ЧТО НИЖЕ, БУДЕТ ПЕРЕПИСАНО
-    * 
-    * 
-    * 
-    * 
-    * 
-    */
-
-
-    /* устанавливаем игнорировать сигнал завершения дочерних процессов. Они будут автоматически
-    удаляться после отработки, не попадая в состояние defunct */
-    signal(SIGCHLD, SIG_IGN);
-
-    int opt;
-    while ((opt = getopt(argc, argv, "p:d")) != -1) {
-        switch (opt) {
-            case 'p':
-                server_port = atoi(optarg);
-                if (server_port <= 0 || server_port > 65535) {
-                    fprintf(stderr, "Invalid port number: %s\n", optarg);
-                    return -1;
-                }
-                printf("Port %d selected\n", server_port);
-                break;
-            case 'd':
-                debug_info = 1;
-                printf("Debug info is enabled\n");
-                break;
-            case '?':
-                fprintf(stderr, "Usage: %s [-p port] [-d]\n", argv[0]);
-                return -1;
-        }
-    }
-
-    /* создаем сокет сервера и записываем его дескриптор */
-    int server_fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (server_fd < 0) {
-        perror("Failed to create socket");
-        return -1;
-    }
-
-    int socket_opt = 1;
-    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &socket_opt, sizeof(socket_opt)) < 0) {
-        perror("setsockopt failed");
-    }
-
-    /* создаем структуру для хранения локального IPv4 адреса */
-    struct sockaddr_in server_addr = {
-        .sin_family = AF_INET, /* семейство адресов IPv4 */
-        .sin_addr.s_addr = INADDR_ANY, /* любой сетевой интерфейс */
-        .sin_port = htons(server_port) /* перевод номера порта из формата хоста в формат сети */
-    };
-
-    /* связываем дескриптор сокета с локальным адресом */
-    if (bind(server_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
-        perror("Error Socket binding to server info");
-        return -1;
-    };
-    LOG("Binding socket to Server info is OK\n");
-
-    /* переводим сокет в состояние прослушки адреса */
-    if (listen(server_fd, 10) < 0) {
-        perror("listen failed");
-        return -1;
-    }
-    printf("Server listening on port %d...\n", server_port);
-
-    /* создаем дескриптор для клиента */
-    struct sockaddr_in client_addr;
-    socklen_t client_addr_len = sizeof(client_addr);
-
-    while (1) {
-        /* принимаем входящий запрос на соединение */
-        int client_fd = accept(server_fd, (struct sockaddr *)&client_addr, &client_addr_len);
-        if (client_fd < 0) {
-            perror("accept failed");
-            continue;
-        }
-
-        char *client_ip = inet_ntoa(client_addr.sin_addr);
-        uint16_t client_port = ntohs(client_addr.sin_port);
-        printf("Connected: %s:%d\n", client_ip, client_port);
-
-        /* создаем дочерний процесс. fork() вернет PID созданного процесса в родительский процесс и 0 в дочерний */
-        if (fork() == 0) {
-            /* закрываем для дочернего процесса сокет SOCKS сервера */
-            close(server_fd);
-
-            if (handle_socks5_greeting(client_fd) == 0)
-                handle_socks5_request(client_fd);
-            
-            /* закрываем для дочернего процесса сокет клиента после окончания ретрансляции и выходим из процесса */
-            close(client_fd);
-            exit(0);
-        }
-
-        /* закрываем сокет клиента для родительского процесса. */
-        close(client_fd);
-    }
+    SOCKET server_socket = server_init(&config);
+    if (server_socket == INVALID_SOCKET) return -1;
+    server_run(server_socket);
 }
