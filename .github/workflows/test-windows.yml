@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-windows:
-    name: Build on Windows
+    name: Build and Test on Windows
     runs-on: windows-latest
 
     steps:
@@ -17,10 +17,8 @@ jobs:
 
       - name: Create config.json from example
         run: |
-          echo "=== Creating minimal config.json from config.json.example ==="
+          echo "=== Creating config.json ==="
           Copy-Item -Path "config.json.example" -Destination "config.json" -Force
-          echo "Created config.json:"
-          Get-Content "config.json"
         shell: pwsh
 
       - name: Setup CMake
@@ -32,11 +30,27 @@ jobs:
       - name: Build project
         run: cmake --build build --config Release
 
-      - name: Check executable
+      - name: Test SOCKS5 Proxy
         run: |
-          echo "=== Checking executable ==="
-          dir build\Release\not_proxy_srv.exe
-          
-          echo "=== Running with --help ==="
-          .\build\Release\not_proxy_srv.exe --help
+          echo "=== Starting SOCKS5 proxy server in background ==="
+
+          $server = Start-Process -FilePath ".\build\Release\not_proxy_srv.exe" `
+                    -ArgumentList "--config config.json" `
+                    -NoNewWindow -PassThru
+
+          Start-Sleep -Seconds 5
+
+          echo "=== Testing proxy with curl ==="
+          curl --socks5 127.0.0.1:1080 -I --connect-timeout 10 --max-time 15 https://httpbin.org/ip
+
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "✅ SUCCESS: Proxy works on Windows!" -ForegroundColor Green
+          } else {
+            Write-Host "❌ FAILED: Test failed" -ForegroundColor Red
+            exit 1
+          }
+
+          # Останавливаем сервер после теста
+          Stop-Process -Id $server.Id -Force -ErrorAction SilentlyContinue
+          echo "=== Server stopped ==="
         shell: pwsh
