@@ -25,11 +25,12 @@
 #include <stdint.h>
 #include <stdio.h>
 
+/* Инициализирует серверный сокет в соответствии с конфигом и начинает прослушку */
+int server_init(struct config_t* cfg);
 /* Обрабатывает SOCKS5 авторизацию */
 int handle_socks5_greeting(int client_fd);
 /* Обрабатывает запросы авторизованных клиентов */
 int handle_socks5_request(int client_fd);
-
 /* Формирует пакет ответа на 10 байт: VER=0x05; REP=0x00; ATYPE=0x01; BND.ADDR и BND.PORT обнуляет */
 static void form_default_reply(uint8_t *rpl);
 /* Обрабатывает запрос с ATYPE = 0x01 */
@@ -38,6 +39,8 @@ static int process_ipv4_request(int client_fd);
 static int process_domainname_request(int client_fd);
 /* Запускает двустороннюю ретрансляцию данных между клиентом и целевым хостом*/
 static void start_relay(int client_fd, int remote_fd);
+/* Создает сокет, биндит его к local_addr и возвращает дескриптор */
+static int init_socket(int af, int type, int protocol, int reuse_addr, struct sockaddr_in* local_addr);
 
 int handle_socks5_greeting(int client_fd)
 {
@@ -84,11 +87,9 @@ int handle_socks5_greeting(int client_fd)
 
 int handle_socks5_request(int client_fd)
 {
-    struct socks5_header hdr;
+    struct socks5_header hdr = {0};
 
-    if (recv(client_fd, &hdr, sizeof(hdr), 0) < (ssize_t)(sizeof(hdr)))
-        return -1;
-    
+    if (recv(client_fd, &hdr, sizeof(hdr), 0) < (ssize_t)(sizeof(hdr))) return -1;
     LOG("REQUEST:\n\t" "VER: %#x\n\tCMD: %#x\n\tRSV: %#x\n\tATYP: %#x\n", 
     hdr.ver, hdr.cmd, hdr.rsv, hdr.atyp);
 
@@ -265,6 +266,27 @@ static void start_relay(int client_fd, int remote_fd)
             }
         }
     }
+}
+
+static int init_socket(int af, int type, int protocol, int reuse_addr, struct sockaddr_in* local_addr)
+{
+    int new_socket_fd = socket(af, type, protocol);
+    if (new_socket_fd < 0)
+        return -1;
+
+    if (reuse_addr) {
+        int socket_opt = 1;
+        if (setsockopt(new_socket_fd, SOL_SOCKET, SO_REUSEADDR, (char*)&socket_opt, sizeof(socket_opt)) != 0)
+            close(new_socket_fd);
+            return -1;
+    }
+
+    if (bind(new_socket_fd, (struct sockaddr*)local_addr, sizeof(new_socket_fd)) != 0) {
+        close(new_socket_fd);
+        return -1;
+    };
+
+    return new_socket_fd;
 }
 
 static void form_default_reply(uint8_t *rpl)

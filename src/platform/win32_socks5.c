@@ -20,7 +20,7 @@
 #include <stdio.h>
 
 /* Инициализирует серверный сокет в соответствии с конфигом и начинает прослушку */
-int proxy_init(struct config_t* cfg);
+int server_init(struct config_t* cfg);
 /* Обрабатывает SOCKS5 авторизацию */
 int handle_socks5_greeting(SOCKET client_socket);
 /* Обрабатывает запросы авторизованных клиентов */
@@ -36,7 +36,7 @@ static void start_relay(SOCKET client_fd, SOCKET remote_fd);
 /* Создает сокет, биндит его к local_addr и возвращает дескриптор */
 static SOCKET init_socket(int af, int type, int protocol, int reuse_addr, struct sockaddr_in* local_addr);
 
-int proxy_init(struct config_t *cfg)
+int server_init(struct config_t *cfg)
 {
 	WSADATA ws_data = {0};
 	int err_stat = WSAStartup(MAKEWORD(2, 2), &ws_data);
@@ -55,7 +55,6 @@ int proxy_init(struct config_t *cfg)
 	SOCKET server_socket = init_socket(AF_INET, SOCK_STREAM, 0, 1, &server_addr);
 	if (server_socket == INVALID_SOCKET) {
 		fprintf(stderr, "Error initialization server socket #%d\n", WSAGetLastError());
-		WSACleanup();
 		return -1;
 	}
 	LOG("Server socket initialization is OK\n");
@@ -64,7 +63,6 @@ int proxy_init(struct config_t *cfg)
 	if (err_stat != 0) {
 		fprintf(stderr, "Can't start to listen to. #%d\n", WSAGetLastError());
 		closesocket(server_socket);
-		WSACleanup();
 		return -1;
 	}
 	char str_local_ip[47] = {0};
@@ -80,7 +78,6 @@ int proxy_init(struct config_t *cfg)
 			fprintf(stderr, "Client detected, but can't connect to a client. #%d\n", WSAGetLastError());
 			closesocket(server_socket);
 			closesocket(client_socket);
-			WSACleanup();
 			return -1;
 		}
 		char str_client_ip[47] = {0};
@@ -130,6 +127,71 @@ int handle_socks5_greeting(SOCKET client_socket)
 	return 0;
 }
 
+int handle_socks5_request(SOCKET client_fd)
+{
+	struct socks5_header hdr = {0};
+
+	if (recv(client_fd, &hdr, sizeof(hdr), 0) < sizeof(hdr)) return -1;
+	LOG("REQUEST:\n\t" "VER: %#x\n\tCMD: %#x\n\tRSV: %#x\n\tATYP: %#x\n",
+	hdr.ver, hdr.cmd, hdr.rsv, hdr.atyp);
+
+	if (hdr.ver != 0x05 || hdr.cmd != CMD_CONNECT) return -1;
+
+	if (hdr.atyp == ATYPE_IPv4) {
+		if (process_ipv4_request(client_fd) < 0) return -1;
+	}
+	else if (hdr.atyp == ATYPE_DOMAINNAME) {
+		if (process_domainname_request(client_fd) < 0) return -1;
+	}
+	else return -1;
+	
+	return 0;
+}
+
+static int process_ipv4_request(SOCKET client_socket)
+{
+	uint8_t ip[4];
+	uint16_t port;
+
+	int n = recv(client_socket, ip, sizeof(ip), 0);
+	if (n != sizeof(ip)) return -1;
+	n = recv(client_socket, &port, sizeof(port), 0);
+	if (n != sizeof(port)) return -1;
+
+	LOG("\tDST.ADDR: %d.%d.%d.%d\n\tDST.PORT: %d\n", ip[0], ip[1], ip[2], ip[3], ntohs(port));
+
+	SOCKET remote_socket = socket(AF_INET, SOCK_STREAM, 0);
+	if (remote_socket == INVALID_SOCKET) {
+		fprintf(stderr, "Error initialization remote socket #%d\n", WSAGetLastError());
+		return -1;
+	}
+	LOG("Remote socket (#%llx) initialization is OK\n", (unsigned long long)remote_socket);
+
+	struct sockaddr_in target_addr = {
+		.sin_family = AF_INET,
+		.sin_addr = htonl(*(uint32_t*)ip),
+		.sin_port = port
+	};
+
+	uint8_t reply[10];
+	form_default_reply(reply);
+
+	if (connect(remote_socket, (struct sockaddr*)&target_addr, sizeof(target_addr)) < 0) {
+		reply[1] = REP_HOST_UNREACHABLE;
+		send(client_socket, reply, sizeof(reply), 0);
+		LOG("REPLY: \n\tREP: %#x\n\tRSV: %#x\n\tATYPE: %#x\n", reply[1], reply[2], reply[3]);
+		closesocket(remote_socket);
+		return -1;
+	}
+
+	send(client_socket, reply, sizeof(reply), 0);
+	LOG("REPLY: \n\tREP: %#x\n\tRSV: %#x\n\tATYPE: %#x\n", reply[1], reply[2], reply[3]);
+
+	start_relay(client_socket, remote_socket);
+	closesocket(remote_socket);
+	return 0;
+}
+
 static SOCKET init_socket(int af, int type, int protocol, int reuse_addr, struct sockaddr_in *local_addr)
 {
 	SOCKET new_socket = socket(af, type, protocol);
@@ -140,8 +202,10 @@ static SOCKET init_socket(int af, int type, int protocol, int reuse_addr, struct
 
 	if (reuse_addr) {
 		int socket_opt = 1;
-		if (setsockopt(new_socket, SOL_SOCKET, SO_REUSEADDR, (char *)& socket_opt, sizeof(socket_opt)) != 0)
+		if (setsockopt(new_socket, SOL_SOCKET, SO_REUSEADDR, (char*)&socket_opt, sizeof(socket_opt)) != 0) {
+			closesocket(new_socket);
 			return INVALID_SOCKET;
+		}
 	}
 
 	if (bind(new_socket, (struct sockaddr*)local_addr, sizeof(new_socket)) != 0) {
@@ -150,4 +214,13 @@ static SOCKET init_socket(int af, int type, int protocol, int reuse_addr, struct
 	};
 
 	return new_socket;
+}
+
+static void form_default_reply(uint8_t* rpl)
+{
+	memset(rpl, 0, 10);
+	rpl[0] = 0x05;
+	rpl[1] = REP_SUCCEEDED;
+	rpl[2] = RSV;
+	rpl[3] = ATYPE_IPv4;
 }

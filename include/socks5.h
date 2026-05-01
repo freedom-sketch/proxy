@@ -69,7 +69,7 @@ extern uint16_t server_port;
 #endif /* _MSC_VER */
 
 /* Инициализация серверного сокета и начало прослушки */
-int proxy_init(struct config_t* cfg);
+int server_init(struct config_t* cfg);
 int handle_socks5_greeting(int client_fd);
 int handle_socks5_request(int client_fd);
 
