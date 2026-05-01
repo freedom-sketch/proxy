@@ -1,0 +1,68 @@
+name: Test on Windows
+
+on:
+  push:
+    branches: [ main, feature/windows-support ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-windows:
+    name: Build and Test on Windows
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create config.json from example
+        run: |
+          echo "=== Creating config.json ==="
+          Copy-Item -Path "config.json.example" -Destination "config.json" -Force
+        shell: pwsh
+
+      - name: Setup CMake
+        uses: lukka/get-cmake@latest
+
+      - name: Configure CMake
+        run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build project
+        run: cmake --build build --config Release
+
+      - name: Test SOCKS5 Proxy (HTTPS)
+        run: |
+          echo "=== Starting SOCKS5 proxy server ==="
+
+          # Запускаем сервер с твоим конфигом
+          $server = Start-Process -FilePath ".\build\Release\not_proxy_srv.exe" `
+                    -ArgumentList "--config config.json" `
+                    -NoNewWindow -PassThru
+
+          echo "Waiting for server to start (7 seconds)..."
+          Start-Sleep -Seconds 7
+
+          echo "=== Testing proxy on port 8080 with https://www.google.com ==="
+
+          curl --verbose `
+               --socks5 127.0.0.1:8080 `
+               -I -L `
+               --connect-timeout 15 `
+               --max-time 30 `
+               https://www.google.com
+
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "✅ SUCCESS: Proxy is working correctly on Windows (port 8080)!" -ForegroundColor Green
+          } 
+          else {
+            Write-Host "❌ FAILED: Proxy test failed" -ForegroundColor Red
+            
+            echo ""
+            echo "=== Retry with --socks5-hostname ==="
+            curl --verbose --socks5-hostname 127.0.0.1:8080 -I -L --connect-timeout 15 https://www.google.com
+          }
+
+          # Останавливаем сервер
+          echo "=== Stopping proxy server ==="
+          Stop-Process -Id $server.Id -Force -ErrorAction SilentlyContinue
+        shell: pwsh
