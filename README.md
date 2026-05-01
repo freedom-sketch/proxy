@@ -5,25 +5,30 @@
 ### 1. Клонируйте репозиторий
 ```bash
 git clone https://github.com/freedom-sketch/socks5-proxy
+cd socks5-proxy
 ```
-### 2. Скомпилируйте
-Рекомендуется использовать GCC
+### 2. Соберите
 ```bash
-cc main.c socks5.c -o a.out
+mkdir build && cd build
+cmake ..
+cmake --build . --config Release
 ```
-### 3. Запустите
+### 3. Настройте и запустите
+Отредактируйте config.json в папке с исполняемым файлом. Шаблон возьмите из config.json.example.
+Далее запустите:
 ```bash
-./a.out [-p port] [-d]
+# Linux
+./not_proxy_srv
+# Windows
+.\not_proxy_srv.exe
 ```
--d - включить debug info
 ### 4. Проверьте
 ```bash
-curl -v --socks5 127.0.0.1:<port> 1.1.1.1
+curl -v --socks5 127.0.0.1:<port> google.com
 ```
 
 ## TODO
 **Поддержка:**
-* Windows
 * IPv6
 * UDP
 * TLS
