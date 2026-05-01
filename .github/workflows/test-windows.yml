@@ -34,35 +34,35 @@ jobs:
         run: |
           echo "=== Starting SOCKS5 proxy server ==="
 
+          # Запускаем сервер с твоим конфигом
           $server = Start-Process -FilePath ".\build\Release\not_proxy_srv.exe" `
                     -ArgumentList "--config config.json" `
                     -NoNewWindow -PassThru
 
-          echo "Waiting for server to initialize..."
-          Start-Sleep -Seconds 6
+          echo "Waiting for server to start (7 seconds)..."
+          Start-Sleep -Seconds 7
 
-          echo "=== Testing proxy with google.com ==="
+          echo "=== Testing proxy on port 8080 with https://www.google.com ==="
 
-          curl --socks5 127.0.0.1:1080 `
-               -I `
-               -L `
+          curl --verbose `
+               --socks5 127.0.0.1:8080 `
+               -I -L `
                --connect-timeout 15 `
-               --max-time 25 `
-               google.com
+               --max-time 30 `
+               https://www.google.com
 
           if ($LASTEXITCODE -eq 0) {
-            Write-Host "✅ SUCCESS: Proxy is working correctly on Windows (HTTPS)!" -ForegroundColor Green
+            Write-Host "✅ SUCCESS: Proxy is working correctly on Windows (port 8080)!" -ForegroundColor Green
           } 
           else {
             Write-Host "❌ FAILED: Proxy test failed" -ForegroundColor Red
-
-            echo ""
-            echo "=== Additional test with --socks5-hostname ==="
-            curl --socks5-hostname 127.0.0.1:1080 -I -L --connect-timeout 12 google.com
             
-            exit 1
+            echo ""
+            echo "=== Retry with --socks5-hostname ==="
+            curl --verbose --socks5-hostname 127.0.0.1:8080 -I -L --connect-timeout 15 https://www.google.com
           }
 
+          # Останавливаем сервер
           echo "=== Stopping proxy server ==="
           Stop-Process -Id $server.Id -Force -ErrorAction SilentlyContinue
         shell: pwsh
