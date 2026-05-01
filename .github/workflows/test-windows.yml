@@ -1,0 +1,30 @@
+name: Test on Windows
+
+on:
+  push:
+    branches: [ main, feature/windows-support ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-windows:
+    name: Build on Windows
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup CMake
+        uses: lukka/get-cmake@latest
+
+      - name: Configure CMake
+        run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build project
+        run: cmake --build build --config Release
+
+      - name: Show executable info
+        run: |
+          .\build\Release\not_proxy_srv.exe --help
+        shell: pwsh
